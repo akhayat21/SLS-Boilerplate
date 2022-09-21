@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  mysqldb:
+    image: "mysql:5.7.10"
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    volumes: 
+    - mysql_db:/var/lib/mysql
+
+  # psql-db:
+  #   image: postgres:14.5-alpine
+  #   ports:
+  #     - 5432:5432
+  #   environment:
+  #     POSTGRES_DB: main
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #   volumes: 
+  #   - db:/var/lib/postgresql/data
+
+  api-v1:
+    build: .
+    ports:
+      - 8080:8080
+    environment: 
+      ENV: local
+      PSQL_HOST: psql-db
+      PSQL_PORT: 5432
+      PSQ_DB: main
+      PSQL_USER: postgres
+      PSQL_PASS: postgres
+      PROCESS_REF_SQS_URL: http://elasticmq:9324/000000000000/ProcessReferenceQueue
+      PROCESS_REF_SQS_ACCESSKEYID: root
+      PROCESS_REF_SQS_SECRETACCESSKEY: root
+      PROCESS_REF_SQS_REGION: us-east-1
+
+  elasticmq:
+    image: softwaremill/elasticmq
+    ports:
+      - 9324:9324
+
+volumes:
+  mysql_db:
+    driver: local
+  

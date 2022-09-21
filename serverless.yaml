@@ -1,0 +1,49 @@
+service: sls boilerplate
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: us-east-1
+
+plugins:
+  - serverless-offline-sqs
+  - serverless-offline
+package:
+  exclude:
+    - node_modules/puppeteer/.local-chromium/**
+
+
+functions:
+  processReference:
+    name: process-reference
+    handler: dist/handlers/process-reference.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - ProcessReferenceQueue
+              - Arn
+          batchSize: 1
+  scheduleProcessReference:
+    name: schedule-process-reference
+    handler: dist/handlers/schedule-process-reference.handler
+    events:
+      - schedule:
+          name: schedule-process-reference-event
+          description: 'Schedules reference to be refreshed (reprocessed) and update the Result row associated with it'
+          rate: rate(5 minutes)
+          enabled: true
+
+resources:
+  Resources:
+    ProcessReferenceQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ProcessReferenceQueue
+
+custom:
+  serverless-offline-sqs:
+    autoCreate: true
+    apiVersion: '2012-11-05'
+    endpoint: http://0.0.0.0:9324
+    region: us-east-1
+    skipCacheInvalidation: false
